@@ -726,6 +726,15 @@ server:
     accessMode: ReadWriteOnce
     # Annotations to apply to the PVC
     annotations: {}
+    snapshot: 
+      name: vault-snapshot
+      snapshotID: ""
+      raftBackupS3Path: ""
+      raftBackupSchedule: "30 14 ? * *"            
+      raftBackupServiceAccount: ""
+      volumeSnapshotClass: ""
+      driver: ""
+      deletionPolicy: Retain
 
   # This configures the Vault Statefulset to create a PVC for audit
   # logs.  Once Vault is deployed, initialized, and unsealed, Vault must
