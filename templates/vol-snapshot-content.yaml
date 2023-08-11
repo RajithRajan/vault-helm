@@ -1,0 +1,16 @@
+{{- if .Values.server.dataStorage.snapshot.snapshotID }}
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotContent
+metadata:
+  name: static-snapshot-content
+spec:
+  volumeSnapshotRef:
+    kind: VolumeSnapshot
+    name: {{ .Values.server.dataStorage.snapshot.name | default "vault-snapshot" }}
+    namespace: {{ .Release.Namespace }}
+  source:
+    snapshotHandle: {{ .Values.server.dataStorage.snapshot.snapshotID }}
+  driver: {{ .Values.server.dataStorage.snapshot.driver | default "ebs.csi.aws.com" }}
+  deletionPolicy: {{ .Values.server.dataStorage.snapshot.deletionPolicy | default "Retain" }}
+  volumeSnapshotClassName: {{ .Values.server.dataStorage.snapshot.volumeSnapshotClass | default "csi-aws-vsc" }}
+{{- end }}  

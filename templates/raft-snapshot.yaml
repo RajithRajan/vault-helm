@@ -1,0 +1,58 @@
+{{- if .Values.server.dataStorage.snapshot.raftBackupS3Path }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vault-snapshot-cronjob
+  namespace: {{ .Release.Namespace }}  
+spec:
+  schedule: {{ .Values.server.dataStorage.snapshot.raftBackupSchedule }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          volumes:
+          - name: share
+            emptyDir: {}
+          containers:
+          - name: snapshot
+            image: {{ .Values.server.image.repository }}:{{ .Values.server.image.tag | default "latest" }}
+            imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+            command:
+            - /bin/sh
+            args:
+            - -ec
+            # export VAULT_TOKEN=$(vault write auth/approle/login role_id=${VAULT_APPROLE_ROLE_ID}  secret_id=${VAULT_APPROLE_SECRET_ID} -format=json | grep client_token | awk '{print $2}' | tr -d \" | tr -d \,);            
+            - |
+              export VAULT_SKIP_VERIFY=true
+              vault operator raft snapshot save /share/vault-raft.snap; 
+            env:
+            - name: VAULT_ADDR
+              value: https://vault-active.{{ .Release.Namespace }}.svc.cluster.local:8200
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef: 
+                  name: vault-secret
+                  key: vault-token              
+            volumeMounts:
+            - mountPath: /share
+              name: share
+          - name: upload
+            image: amazon/aws-cli:2.2.14
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            args:
+            - -ec
+            # the script wait untill the snapshot file is available
+            # then upload to s3
+            - |
+              export AWS_REGION=ap-south-1; 
+              aws sts get-caller-identity;
+              until [ -f /share/vault-raft.snap ]; do sleep 5; done;
+              aws s3 cp /share/vault-raft.snap {{ .Values.server.dataStorage.snapshot.raftBackupS3Path }}/vault-raft_$(date +"%Y%m%d_%H%M%S").snap;
+            volumeMounts:
+            - mountPath: /share
+              name: share
+          serviceAccountName: {{ .Values.server.dataStorage.snapshot.raftBackupServiceAccount }}              
+          restartPolicy: OnFailure
+{{- end }}          

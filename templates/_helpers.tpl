@@ -277,6 +277,12 @@ storage might be desired by the user.
       spec:
         accessModes:
           - {{ .Values.server.dataStorage.accessMode | default "ReadWriteOnce" }}
+          {{- if .Values.server.dataStorage.snapshot.snapshotID }}
+        dataSource:
+          apiGroup: snapshot.storage.k8s.io
+          kind: VolumeSnapshot
+          name: {{ .Values.server.dataStorage.snapshot.name | default "vault-snapshot" }}
+          {{- end }}
         resources:
           requests:
             storage: {{ .Values.server.dataStorage.size }}

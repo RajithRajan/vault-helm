@@ -1,0 +1,11 @@
+{{- if .Values.server.dataStorage.snapshot.snapshotID }}
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: {{ .Values.server.dataStorage.snapshot.name | default "vault-snapshot" }}
+  namespace: {{ .Release.Namespace }} 
+spec:
+  volumeSnapshotClassName: {{ .Values.server.dataStorage.snapshot.volumeSnapshotClass | default "csi-aws-vsc" }}
+  source:
+    volumeSnapshotContentName: static-snapshot-content
+{{- end }}
