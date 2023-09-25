@@ -1,10 +1,15 @@
 ## Unreleased
 
+Features:
+* server: Add support for dual stack clusters [GH-833](https://github.com/hashicorp/vault-helm/pull/833)
+* server: Support `hostAliases` for the StatefulSet pods [GH-955](https://github.com/hashicorp/vault-helm/pull/955)
+
 Bugs:
 * csi: Add namespace field to `csi-role` and `csi-rolebindings`. [GH-909](https://github.com/hashicorp/vault-helm/pull/909)
 
 Improvements:
 * global: Add `global.namespace` to override the helm installation namespace. [GH-909](https://github.com/hashicorp/vault-helm/pull/909)
+* server: use vault.fullname in Helm test [GH-912](https://github.com/hashicorp/vault-helm/pull/912)
 
 ## 0.25.0 (June 26, 2023)
 

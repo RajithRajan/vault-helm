@@ -445,6 +445,12 @@ server:
     #    hosts:
     #      - chart-example.local
 
+  # hostAliases is a list of aliases to be added to /etc/hosts. Specified as a YAML list.
+  hostAliases: []
+  # - ip: 127.0.0.1
+  #   hostnames:
+  #     - chart-example.local
+
   # OpenShift only - create a route to expose the service
   # By default the created route will be of type passthrough
   route:
@@ -465,7 +471,7 @@ server:
 
   # authDelegator enables a cluster role binding to be attached to the service
   # account.  This cluster role binding can be used to setup Kubernetes auth
-  # method.  https://www.vaultproject.io/docs/auth/kubernetes.html
+  # method. See https://developer.hashicorp.com/vault/docs/auth/kubernetes
   authDelegator:
     enabled: true
 
@@ -676,6 +682,21 @@ server:
     # or NodePort.
     #type: ClusterIP
 
+    # The IP family and IP families options are to set the behaviour in a dual-stack environment.
+    # Omitting these values will let the service fall back to whatever the CNI dictates the defaults
+    # should be.
+    # These are only supported for kubernetes versions >=1.23.0
+    #
+    # Configures the service's supported IP family policy, can be either:
+    #     SingleStack: Single-stack service. The control plane allocates a cluster IP for the Service, using the first configured service cluster IP range.
+    #     PreferDualStack: Allocates IPv4 and IPv6 cluster IPs for the Service.
+    #     RequireDualStack: Allocates Service .spec.ClusterIPs from both IPv4 and IPv6 address ranges.
+    ipFamilyPolicy: ""
+    
+    # Sets the families that should be supported and the order in which they should be applied to ClusterIP as well.
+    # Can be IPv4 and/or IPv6.
+    ipFamilies: []
+
     # Do not wait for pods to be ready before including them in the services'
     # targets. Does not apply to the headless service, which is used for
     # cluster-internal communication.
@@ -712,7 +733,7 @@ server:
 
   # This configures the Vault Statefulset to create a PVC for data
   # storage when using the file or raft backend storage engines.
-  # See https://www.vaultproject.io/docs/configuration/storage/index.html to know more
+  # See https://developer.hashicorp.com/vault/docs/configuration/storage to know more
   dataStorage:
     enabled: true
     # Size of the PVC created
@@ -740,7 +761,7 @@ server:
   # logs.  Once Vault is deployed, initialized, and unsealed, Vault must
   # be configured to use this for audit logs.  This will be mounted to
   # /vault/audit
-  # See https://www.vaultproject.io/docs/audit/index.html to know more
+  # See https://developer.hashicorp.com/vault/docs/audit to know more
   auditStorage:
     enabled: false
     # Size of the PVC created
@@ -759,7 +780,7 @@ server:
   # and no initialization. This is useful for experimenting with Vault without
   # needing to unseal, store keys, et. al. All data is lost on restart - do not
   # use dev mode for anything other than experimenting.
-  # See https://www.vaultproject.io/docs/concepts/dev-server.html to know more
+  # See https://developer.hashicorp.com/vault/docs/concepts/dev-server to know more
   dev:
     enabled: false
 
@@ -781,7 +802,7 @@ server:
     # Note: Configuration files are stored in ConfigMaps so sensitive data
     # such as passwords should be either mounted through extraSecretEnvironmentVars
     # or through a Kube secret.  For more information see:
-    # https://www.vaultproject.io/docs/platform/k8s/helm/run#protecting-sensitive-vault-configurations
+    # https://developer.hashicorp.com/vault/docs/platform/k8s/helm/run#protecting-sensitive-vault-configurations
     config: |
       ui = true
 
@@ -824,12 +845,12 @@ server:
     replicas: 3
 
     # Set the api_addr configuration for Vault HA
-    # See https://www.vaultproject.io/docs/configuration#api_addr
+    # See https://developer.hashicorp.com/vault/docs/configuration#api_addr
     # If set to null, this will be set to the Pod IP Address
     apiAddr: null
 
     # Set the cluster_addr confuguration for Vault HA
-    # See https://www.vaultproject.io/docs/configuration#cluster_addr
+    # See https://developer.hashicorp.com/vault/docs/configuration#cluster_addr
     # If set to null, this will be set to https://$(HOSTNAME).{{ template "vault.fullname" . }}-internal:8201
     clusterAddr: null
 
@@ -847,7 +868,7 @@ server:
       # Note: Configuration files are stored in ConfigMaps so sensitive data
       # such as passwords should be either mounted through extraSecretEnvironmentVars
       # or through a Kube secret.  For more information see:
-      # https://www.vaultproject.io/docs/platform/k8s/helm/run#protecting-sensitive-vault-configurations
+      # https://developer.hashicorp.com/vault/docs/platform/k8s/helm/run#protecting-sensitive-vault-configurations
       config: |
         ui = true
 
@@ -874,7 +895,7 @@ server:
     # Note: Configuration files are stored in ConfigMaps so sensitive data
     # such as passwords should be either mounted through extraSecretEnvironmentVars
     # or through a Kube secret.  For more information see:
-    # https://www.vaultproject.io/docs/platform/k8s/helm/run#protecting-sensitive-vault-configurations
+    # https://developer.hashicorp.com/vault/docs/platform/k8s/helm/run#protecting-sensitive-vault-configurations
     config: |
       ui = true
 
@@ -926,6 +947,12 @@ server:
     # The name of the service account to use.
     # If not set and create is true, a name is generated using the fullname template
     name: ""
+    # Create a Secret API object to store a non-expiring token for the service account.
+    # Prior to v1.24.0, Kubernetes used to generate this secret for each service account by default.
+    # Kubernetes now recommends using short-lived tokens from the TokenRequest API or projected volumes instead if possible.
+    # For more details, see https://kubernetes.io/docs/concepts/configuration/secret/#service-account-token-secrets
+    # serviceAccount.create must be equal to 'true' in order to use this feature.
+    createSecret: false
     # Extra annotations for the serviceAccount definition. This can either be
     # YAML or a YAML-formatted multi-line templated string map of the
     # annotations to apply to the serviceAccount.
@@ -981,6 +1008,21 @@ ui:
   serviceNodePort: null
   externalPort: 8200
   targetPort: 8200
+
+  # The IP family and IP families options are to set the behaviour in a dual-stack environment.
+  # Omitting these values will let the service fall back to whatever the CNI dictates the defaults
+  # should be.
+  # These are only supported for kubernetes versions >=1.23.0
+  #
+  # Configures the service's supported IP family, can be either:
+  #     SingleStack: Single-stack service. The control plane allocates a cluster IP for the Service, using the first configured service cluster IP range.
+  #     PreferDualStack: Allocates IPv4 and IPv6 cluster IPs for the Service.
+  #     RequireDualStack: Allocates Service .spec.ClusterIPs from both IPv4 and IPv6 address ranges.
+  serviceIPFamilyPolicy: ""
+
+  # Sets the families that should be supported and the order in which they should be applied to ClusterIP as well
+  # Can be IPv4 and/or IPv6.
+  serviceIPFamilies: []
 
   # The externalTrafficPolicy can be set to either Cluster or Local
   # and is only valid for LoadBalancer and NodePort service types.
@@ -1155,7 +1197,7 @@ csi:
   debug: false
 
   # Pass arbitrary additional arguments to vault-csi-provider.
-  # See https://www.vaultproject.io/docs/platform/k8s/csi/configurations#command-line-arguments
+  # See https://developer.hashicorp.com/vault/docs/platform/k8s/csi/configurations#command-line-arguments
   # for the available command line flags.
   extraArgs: []
 
@@ -1164,8 +1206,8 @@ csi:
 # the Vault configuration. There are a few examples included in the `config` sections above.
 #
 # For more information see:
-# https://www.vaultproject.io/docs/configuration/telemetry
-# https://www.vaultproject.io/docs/internals/telemetry
+# https://developer.hashicorp.com/vault/docs/configuration/telemetry
+# https://developer.hashicorp.com/vault/docs/internals/telemetry
 serverTelemetry:
   # Enable support for the Prometheus Operator. Currently, this chart does not support
   # authenticating to Vault's metrics endpoint, so the following `telemetry{}` must be included

@@ -83,6 +83,17 @@ Compute if the server serviceaccount is enabled.
 {{- end -}}
 
 {{/*
+Compute if the server serviceaccount should have a token created and mounted to the serviceaccount.
+*/}}
+{{- define "vault.serverServiceAccountSecretCreationEnabled" -}}
+{{- $_ := set . "serverServiceAccountSecretCreationEnabled"
+  (and
+    (eq (.Values.server.serviceAccount.create | toString) "true")
+    (eq (.Values.server.serviceAccount.createSecret | toString) "true")) -}}
+{{- end -}}
+
+
+{{/*
 Compute if the server auth delegator serviceaccount is enabled.
 */}}
 {{- define "vault.serverAuthDelegator" -}}
@@ -156,7 +167,11 @@ Set's the replica count based on the different modes configured by user
   {{ if eq .mode "standalone" }}
     {{- default 1 -}}
   {{ else if eq .mode "ha" }}
-    {{- .Values.server.ha.replicas | default 3 -}}
+    {{- if kindIs "int64" .Values.server.ha.replicas -}}
+      {{- .Values.server.ha.replicas -}}
+    {{ else }}
+      {{- 3 -}}
+    {{- end -}}
   {{ else }}
     {{- default 1 -}}
   {{ end }}
