@@ -1,4 +1,5 @@
-{{- if .Values.server.dataStorage.snapshot.raftBackupS3Path }}
+{{- if .Values.server.dataStorage.snapshot.raftBackupPath }}
+{{ $bucketparts := split ":" .Values.server.dataStorage.snapshot.raftBackupPath }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -36,6 +37,7 @@ spec:
             volumeMounts:
             - mountPath: /share
               name: share
+          {{- if eq $bucketparts._0 "s3" }}
           - name: upload
             image: amazon/aws-cli:2.2.14
             imagePullPolicy: IfNotPresent
@@ -49,10 +51,30 @@ spec:
               export AWS_REGION=ap-south-1; 
               aws sts get-caller-identity;
               until [ -f /share/vault-raft.snap ]; do sleep 5; done;
-              aws s3 cp /share/vault-raft.snap {{ .Values.server.dataStorage.snapshot.raftBackupS3Path }}/vault-raft_$(date +"%Y%m%d_%H%M%S").snap;
+              aws s3 cp /share/vault-raft.snap {{ .Values.server.dataStorage.snapshot.raftBackupPath }}/vault-raft_$(date +"%Y%m%d_%H%M%S").snap;
             volumeMounts:
             - mountPath: /share
               name: share
           serviceAccountName: {{ .Values.server.dataStorage.snapshot.raftBackupServiceAccount }}              
           restartPolicy: OnFailure
+          {{- end }}
+          {{- if eq $bucketparts._0 "gs" }}
+          - name: upload
+            image: gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            args:
+            - -ec
+            # the script wait untill the snapshot file is available
+            # then upload to s3
+            - |
+              until [ -f /share/vault-raft.snap ]; do sleep 5; done;
+              gcloud storage cp /share/vault-raft.snap {{ .Values.server.dataStorage.snapshot.raftBackupPath }}/vault-raft_$(date +"%Y%m%d_%H%M%S").snap;
+            volumeMounts:
+            - mountPath: /share
+              name: share
+          serviceAccountName: {{ .Values.server.dataStorage.snapshot.raftBackupServiceAccount }}              
+          restartPolicy: OnFailure
+          {{- end }}
 {{- end }}          
